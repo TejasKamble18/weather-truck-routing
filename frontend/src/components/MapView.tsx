@@ -4,14 +4,7 @@ import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import type { FeatureCollection, Feature, Point, LineString } from "geojson";
 import { Expand, Map as MapIcon } from "lucide-react";
 import type { Plan, Heatmap, Layer } from "../api";
-import {
-  colors,
-  dateTime,
-  label,
-  levels,
-  routeColors,
-  truckPosition,
-} from "../lib";
+import { colors, dateTime, label, routeColors, truckPosition } from "../lib";
 import { cellRadiusAtZoom0, heatColorExpression } from "../heat";
 import "maplibre-gl/dist/maplibre-gl.css";
 maplibregl.setWorkerUrl(workerUrl);
@@ -401,15 +394,6 @@ export default function MapView({
           </div>
         </div>
       )}
-      <div className="map-legend">
-        <span>CHECKPOINT RISK</span>
-        {levels.map((l) => (
-          <span key={l}>
-            <i style={{ background: colors[l] }} />
-            {label(l)}
-          </span>
-        ))}
-      </div>
     </>
   );
 }

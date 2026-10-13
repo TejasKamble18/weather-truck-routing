@@ -434,12 +434,25 @@ legend {
   background: #a5b496;
   border-radius: 50%;
 }
-.map-legend {
+.map-overlays {
   position: absolute;
-  bottom: 213px;
-  left: 27px;
+  bottom: 34px;
+  left: 26px;
+  right: 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  pointer-events: none;
+}
+.map-overlays > * {
+  pointer-events: auto;
+}
+.map-legend {
+  max-width: 100%;
   background: #fffffff0;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
@@ -467,10 +480,8 @@ legend {
   flex-shrink: 0;
 }
 .forecast-controls {
-  position: absolute;
-  bottom: 34px;
-  left: 26px;
-  right: 26px;
+  width: 100%;
+  min-width: 0;
   background: #fffffff5;
   border: 1px solid #e1e7dd;
   border-radius: 10px;
@@ -854,23 +865,21 @@ legend {
   }
   .map-legend {
     gap: 7px;
-    left: 16px;
   }
   .map-legend > span:first-child {
     display: none;
   }
-  .forecast-controls {
+  .map-overlays {
     left: 16px;
     right: 16px;
+  }
+  .forecast-controls {
     padding: 15px;
   }
   .forecast-top {
     align-items: flex-start;
     flex-direction: column;
     gap: 12px;
-  }
-  .map-legend {
-    bottom: 245px;
   }
   .map-empty {
     width: 300px;
@@ -929,7 +938,7 @@ legend {
     top: 19%;
     width: 290px;
   }
-  .forecast-controls {
+  .map-overlays {
     bottom: 36px;
   }
   .forecast-top {
@@ -946,10 +955,8 @@ legend {
     height: 16px;
   }
   .map-legend {
-    bottom: 215px;
     font-size: 8px;
     gap: 10px;
-    left: 16px;
   }
   .forecast-top strong {
     font-size: 12px;
@@ -998,6 +1005,7 @@ legend {
 }
 .heat-scale {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 7px;
   font-size: 8px;
@@ -1008,6 +1016,7 @@ legend {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  white-space: nowrap;
 }
 .heat-band i {
   width: 14px;
@@ -1017,17 +1026,4 @@ legend {
 .heat-scale span:last-child {
   margin-left: auto;
   color: #9ba58f;
-}
-.map-legend {
-  bottom: 237px;
-}
-@media (max-width: 1050px) {
-  .map-legend {
-    bottom: 267px;
-  }
-}
-@media (max-width: 720px) {
-  .map-legend {
-    bottom: 239px;
-  }
 }

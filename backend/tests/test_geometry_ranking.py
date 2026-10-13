@@ -100,8 +100,15 @@ def test_non_monotonic_timing_rejected():
 def _ranked(id, *, avg=0.0, hours=1.0, severe=0.0):
     miles = dict.fromkeys(LEVELS, 0.0)
     miles["severe"] = severe
-    return {"id": id, "duration_hours": hours,
-            "summary": {"miles_by_level": miles, "average_risk": avg, "no_travel_warning": False}}
+    return {
+        "id": id,
+        "duration_hours": hours,
+        "summary": {
+            "miles_by_level": miles,
+            "average_risk": avg,
+            "no_travel_warning": False,
+        },
+    }
 
 
 def test_reason_shows_a_visible_difference_for_close_average_risk():
@@ -111,5 +118,33 @@ def test_reason_shows_a_visible_difference_for_close_average_risk():
 
 
 def test_reason_uses_readable_units():
-    assert "14h 49m vs 14h 55m" in rank([_ranked("A", hours=14.81), _ranked("B", hours=14.92)])["reason"]
-    assert "12.0 vs 30.5 mi" in rank([_ranked("A", severe=12), _ranked("B", severe=30.5)])["reason"]
+    assert (
+        "14h 49m vs 14h 55m"
+        in rank([_ranked("A", hours=14.81), _ranked("B", hours=14.92)])["reason"]
+    )
+    assert (
+        "12.0 vs 30.5 mi"
+        in rank([_ranked("A", severe=12), _ranked("B", severe=30.5)])["reason"]
+    )
+
+
+@pytest.mark.parametrize(
+    "field,a,b,comparison",
+    [
+        ("severe", 0.011, 0.049, "0.01 vs 0.05 mi"),
+        ("avg", 0.010001, 0.010002, "0.010001 vs 0.010002"),
+        ("hours", 1.001, 1.002, "1h 00m 04s vs 1h 00m 07s"),
+        ("hours", 1.00001, 1.00002, "less than 1 s difference"),
+        ("severe", 0.01000001, 0.01000002, "less than 0.000001 mi difference"),
+        ("avg", 0.01000001, 0.01000002, "less than 0.000001 difference"),
+    ],
+)
+def test_reason_never_displays_unequal_values_as_a_tie(field, a, b, comparison):
+    result = rank([_ranked("B", **{field: b}), _ranked("A", **{field: a})])
+    assert result["route_id"] == "A"
+    assert comparison in result["reason"]
+
+
+def test_actual_tie_still_has_a_tie_explanation():
+    result = rank([_ranked("A"), _ranked("B")])
+    assert result["reason"] == "Equal risk and travel time; route order breaks the tie."

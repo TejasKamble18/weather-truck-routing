@@ -19,21 +19,32 @@ def summarize(points, total):
     }
 
 
-def _hours(value):
+def _hours(value, *, include_seconds=False):
+    if include_seconds:
+        seconds = round(value * 3600)
+        hours, seconds = divmod(seconds, 3600)
+        minutes, seconds = divmod(seconds, 60)
+        return f"{hours}h {minutes:02d}m {seconds:02d}s"
     minutes = round(value * 60)
     return f"{minutes // 60}h {minutes % 60:02d}m"
 
 
 def _compare(dimension, a, b):
     """Format the deciding values so the difference is visible to the reader."""
-    if dimension < 3:
-        return f"{a:.1f} vs {b:.1f} mi"
     if dimension == 4:
-        return f"{_hours(a)} vs {_hours(b)}"
-    for digits in (2, 3, 4):
-        if f"{a:.{digits}f}" != f"{b:.{digits}f}":
-            break
-    return f"{a:.{digits}f} vs {b:.{digits}f}"
+        for include_seconds in (False, True):
+            left = _hours(a, include_seconds=include_seconds)
+            right = _hours(b, include_seconds=include_seconds)
+            if left != right:
+                return f"{left} vs {right}"
+        return "less than 1 s difference"
+    unit = " mi" if dimension < 3 else ""
+    for digits in range(1 if dimension < 3 else 2, 7):
+        left, right = f"{a:.{digits}f}", f"{b:.{digits}f}"
+        if left != right:
+            return f"{left} vs {right}{unit}"
+    # Keep negligible differences honest without displaying meaningless precision.
+    return f"less than 0.000001{unit} difference"
 
 
 def rank(routes):
