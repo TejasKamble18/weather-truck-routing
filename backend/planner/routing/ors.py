@@ -60,7 +60,9 @@ class ORSClient:
         data = self.call(
             "POST",
             "/openrouteservice/v2/directions/driving-hgv/geojson",
-            json={"coordinates": coords, "instructions": True},
+            # -1 = snap each point to the nearest road; the default 350 m fails for
+            # via points placed in open country and for some city centroids.
+            json={"coordinates": coords, "instructions": True, "radiuses": [-1] * len(coords)},
         )
         try:
             f = data["features"][0]
