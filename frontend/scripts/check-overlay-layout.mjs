@@ -91,7 +91,10 @@ try {
   await page.goto(process.env.PREVIEW_URL || "http://127.0.0.1:5173/");
   async function checkLayout(state) {
     // 650 px tall = a 1366×768 laptop once the browser's own toolbars are subtracted.
-    for (const [width, height] of [320, 390, 768, 1440].flatMap((w) => [[w, 844], [w, 650]])) {
+    for (const [width, height] of [320, 390, 768, 1440].flatMap((w) => [
+      [w, 844],
+      [w, 650],
+    ])) {
       await page.setViewportSize({ width, height });
       const layout = await page.evaluate(() => {
         const legend = document
@@ -100,7 +103,9 @@ try {
         const controls = document
           .querySelector(".forecast-controls")
           .getBoundingClientRect();
-        const empty = document.querySelector(".map-empty")?.getBoundingClientRect();
+        const empty = document
+          .querySelector(".map-empty")
+          ?.getBoundingClientRect();
         return {
           gap: controls.top - legend.bottom,
           emptyGap: empty ? legend.top - empty.bottom : null,
@@ -126,6 +131,7 @@ try {
   // MapView is lazy-loaded; without this wait the empty-state card may not exist yet
   // and its overlap check would be silently skipped.
   await page.waitForSelector(".map-empty");
+  await page.evaluate(() => document.fonts.ready);
   await checkLayout("empty");
   await page.getByRole("button", { name: "Find my routes" }).click();
   await page.waitForFunction(

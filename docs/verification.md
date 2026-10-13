@@ -1,5 +1,24 @@
 # Verification — 13 October 2026
 
+## Browser weather update
+
+- Backend: **91 tests pass**, including pending/completed plans, both weather
+  submissions, validation, upload limits, expiry and isolated forecast storage.
+- Frontend: **15 tests pass**; TypeScript and Vite production build pass.
+- Real Chrome against the local production build and real providers returned
+  three Chicago–Dallas routes with 40/40/41 checkpoints and a 148-cell heatmap.
+- All four layers, hours 0/24/48, play/pause and route selection were exercised.
+  Timeline interactions made zero planner/weather API calls. No JavaScript
+  errors or mobile horizontal overflow were observed.
+- Browser weather solves the hosted server's observed Open-Meteo rate-limit
+  failure without moving risk calculations out of Django. See README for the
+  validation limits and client-data authenticity tradeoff.
+- Production addresses: https://weather-truck-routing-swart.vercel.app and
+  https://weather-truck-routing-api.onrender.com. The checks above use the new
+  local production build; deployment verification follows the code push.
+
+## Original implementation checks
+
 - Backend: **70 pytest tests passed**; Django system check reported no issues.
 - Frontend: **9 Vitest tests passed**; TypeScript and Vite production build passed.
 - Follow-up fixes: close comparisons use additional decimals or seconds, with an

@@ -48,6 +48,8 @@ REST_FRAMEWORK = {
 }
 TIME_ZONE = "UTC"
 USE_TZ = True
+# Bounded raw hourly forecasts for up to 1,000 cells over the forecast horizon.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 16 * 1024 * 1024
 ORS_API_KEY = os.getenv("ORS_API_KEY", "")
 ORS_BASE_URL = "https://api.heigit.org"
 PLACES_CSV = BASE_DIR / "data/us_places.csv"

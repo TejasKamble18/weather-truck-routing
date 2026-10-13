@@ -21,6 +21,11 @@ based on weather, load weight and travel time.
 
 ## External services
 
+Deployment update: the website uses browser-fetched Open-Meteo data with
+server-generated manifests and Django validation/scoring. See the README's
+browser weather API section for the pending/completed protocol, limits and
+trust boundary. Server-only API requests remain supported.
+
 | Purpose | Service | Notes |
 |---|---|---|
 | Routes (primary) | Valhalla public server `https://valhalla1.openstreetmap.de/route`, `costing=truck`, `alternates=2` | No key. Returns up to 3 truck routes with per-maneuver times |

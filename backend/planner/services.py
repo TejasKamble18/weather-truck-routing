@@ -11,6 +11,7 @@ from .weather import snap, fetch, at
 from .risk import classify
 from .ranking import summarize, rank
 from .errors import PlannerError
+from .browser_weather import manifest
 
 
 def create_plan(data):
@@ -29,18 +30,10 @@ def create_plan(data):
         ).isoformat()
     points = [p for r in routes for p in r["checkpoints"]]
     end_time = max(datetime.fromisoformat(p["eta"]) for p in points)
-    series = fetch([snap(p["lon"], p["lat"]) for p in points], end_time)
     for route in routes:
-        for p in route["checkpoints"]:
-            p["weather"] = at(
-                series[snap(p["lon"], p["lat"])], datetime.fromisoformat(p["eta"])
-            )
-            p["risk"] = classify(p["weather"], data["load_lbs"])
-        route["summary"] = summarize(route["checkpoints"], route["distance_miles"])
         # Send a compact timing profile with the geometry for accurate animated truck positions.
         route["vertex_seconds"] = [round(t, 2) for t in route.pop("_seconds")]
         route.pop("_miles")
-    recommendation = rank(routes)
     plan_id = str(uuid4())
     result = {
         "plan_id": plan_id,
@@ -54,8 +47,34 @@ def create_plan(data):
         .isoformat(),
         "routes": routes,
         "notes": notes,
-        "recommendation": recommendation,
         "heatmap_url": f"/api/plan/{plan_id}/heatmap/",
     }
+    if data.get("weather_source") == "browser":
+        result["status"] = "weather_required"
+        result["weather_source"] = "browser"
+        result["expires_at"] = (timezone.now() + timedelta(hours=2)).isoformat()
+        result["forecast_request"] = manifest(
+            [snap(p["lon"], p["lat"]) for p in points],
+            end_time,
+            timezone.now(),
+            f"/api/plan/{plan_id}/weather/",
+        )
+    else:
+        series = fetch([snap(p["lon"], p["lat"]) for p in points], end_time)
+        score_plan(result, series)
     cache.set("plan:" + plan_id, result, 7200)
     return result
+
+
+def score_plan(plan, series):
+    for route in plan["routes"]:
+        for p in route["checkpoints"]:
+            p["weather"] = at(
+                series[snap(p["lon"], p["lat"])], datetime.fromisoformat(p["eta"])
+            )
+            p["risk"] = classify(p["weather"], plan["load_lbs"])
+        route["summary"] = summarize(route["checkpoints"], route["distance_miles"])
+    plan["recommendation"] = rank(plan["routes"])
+    plan["status"] = "complete"
+    plan.pop("forecast_request", None)
+    return plan

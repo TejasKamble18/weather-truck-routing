@@ -17,6 +17,7 @@ import PlanForm from "./components/PlanForm";
 import RouteCards from "./components/RouteCards";
 const MapView = lazy(() => import("./components/MapView"));
 import HeatmapControls from "./components/HeatmapControls";
+import { completeWeather, type PendingWeather } from './weather';
 
 export default function App() {
   const [plan, setPlan] = useState<Plan | null>(null),
@@ -50,7 +51,8 @@ export default function App() {
     setHeatBusy(true);
     setHeatError("");
     try {
-      const h = await api<Heatmap>(p.heatmap_url, signal);
+      const pending = await api<Heatmap | PendingWeather>(p.heatmap_url, signal);
+      const h = await completeWeather<Heatmap>(pending, signal);
       if (!signal.aborted) setHeatmap(h);
     } catch (e) {
       if (!signal.aborted)
@@ -74,7 +76,8 @@ export default function App() {
     setHour(0);
     setPlaying(false);
     try {
-      const p = await api<Plan>("/api/plan/", c.signal, input);
+      const pending = await api<Plan | PendingWeather>("/api/plan/", c.signal, { ...input, weather_source: 'browser' });
+      const p = await completeWeather<Plan>(pending, c.signal);
       if (c.signal.aborted) return;
       setPlan(p);
       setSelected(p.recommendation.route_id);

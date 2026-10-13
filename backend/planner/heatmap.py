@@ -30,10 +30,11 @@ def corridor(routes):
     return ordered
 
 
-def build(plan):
+def build(plan, series=None):
     start = datetime.fromisoformat(plan["forecast_start"])
     cells = corridor(plan["routes"])
-    series = fetch(cells, start + timedelta(hours=48))
+    if series is None:
+        series = fetch(cells, start + timedelta(hours=48))
     layers = {k: [] for k in ("risk", "wind", "rain", "snow")}
     for hour in range(49):
         values = [at(series[c], start + timedelta(hours=hour)) for c in cells]

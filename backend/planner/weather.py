@@ -17,6 +17,17 @@ def snap(lon, lat):
     return (floor(lon * 4 + 0.5) / 4, floor(lat * 4 + 0.5) / 4)
 
 
+def forecast_days(end, now):
+    days = max(3, (end.date() - now.date()).days + 2)
+    if days > 16:
+        raise PlannerError(
+            "This trip arrives beyond the 16-day forecast horizon. Choose an earlier departure.",
+            "forecast_unavailable",
+            422,
+        )
+    return days
+
+
 def parse_series(data):
     try:
         hourly, units = data["hourly"], data["hourly_units"]
@@ -41,9 +52,11 @@ def parse_series(data):
                 datetime.fromisoformat(t).replace(tzinfo=timezone.utc).timestamp()
             )
             series[stamp] = {
-                key: None
-                if hourly[field][i] is None
-                else float(hourly[field][i]) / factors[key]
+                key: (
+                    None
+                    if hourly[field][i] is None
+                    else float(hourly[field][i]) / factors[key]
+                )
                 for key, field in FIELDS.items()
             }
         if not series:
@@ -57,13 +70,7 @@ def parse_series(data):
 
 def fetch(cells, end, now=None):
     now = now or datetime.now(timezone.utc)
-    days = max(3, (end.date() - now.date()).days + 2)
-    if days > 16:
-        raise PlannerError(
-            "This trip arrives beyond the 16-day forecast horizon. Choose an earlier departure.",
-            "forecast_unavailable",
-            422,
-        )
+    days = forecast_days(end, now)
     cells = sorted(set(cells))
 
     def key(cell):

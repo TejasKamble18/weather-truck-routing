@@ -4,6 +4,9 @@ from rest_framework import serializers
 
 
 class PlanInput(serializers.Serializer):
+    weather_source = serializers.ChoiceField(
+        choices=["server", "browser"], default="server"
+    )
     origin = serializers.CharField(max_length=200)
     destination = serializers.CharField(max_length=200)
     departure = serializers.DateTimeField(default=timezone.now)

@@ -112,6 +112,45 @@ order and `layers.risk|wind|rain|snow[hour][cell]`, with 49 hourly frames.
 
 `GET /api/health/` returns `{"status":"ok"}`.
 
+### Browser weather flow used by the website
+
+The website sends `weather_source: "browser"` to `POST /api/plan/`. Django
+returns a pending plan with `status: "weather_required"`, routes, checkpoint
+ETAs and a `forecast_request` describing the exact cells, UTC dates, variables,
+and submission URL. A pending plan has no scores or recommendation.
+
+The browser fetches real Open-Meteo forecasts in batches of up to 100 cells,
+with at most two batches in flight. It posts `{ "forecasts": [{ "cell":
+[longitude, latitude], "forecast": <raw provider response> }] }` to
+`POST /api/plan/<plan_id>/weather/`. Django validates the data, calculates all
+risk and ranking, and returns the completed plan with `status: "complete"`.
+
+For browser plans, `GET /api/plan/<plan_id>/heatmap/` initially returns another
+weather request. Submit the forecasts to
+`POST /api/plan/<plan_id>/heatmap/weather/` to receive the same 49-frame heatmap
+format described above. The browser reuses matching, previously validated
+forecasts for 30 minutes in bounded page memory. Timeline interactions do not
+download any forecasts. Replanning cancels outstanding requests.
+
+This transport avoids depending on the hosting server's access to the free
+weather endpoint, which returned rate limits during deployment. It does not
+remove provider quotas or guarantee availability: downloads have a 30-second
+timeout and at most one short retry for HTTP 429. Other failures remain visible.
+Omitting `weather_source` preserves the original server-only API.
+
+Django checks cell membership, returned model coordinates (within 0.25 degrees
+of the requested cell), UTC hourly timestamps, full requested date coverage,
+supported units, and finite nonnegative numeric values. Uploads are limited to
+16 MiB, 1,000 cells and 408 hours per cell. Invalid forecasts never become low
+risk. Browser forecasts remain isolated to a random plan ID and never enter the
+shared server-provider weather cache. Completed submissions are idempotent and
+cannot replace already accepted results. Plans expire two hours after creation.
+
+**Assessment tradeoff:** validation checks consistency, not authenticity. A
+client can fabricate plausible forecasts. Plan IDs are bearer references, not
+user authentication. A production system requiring trustworthy weather inputs
+should retrieve them server-side through an authenticated provider service.
+
 Errors use `{"error":"code","detail":"message or field errors"}`. Input errors
 return 400, unknown/out-of-US locations or expired plans 404, unavailable forecast
 coverage 422, provider failures 502, missing provider configuration 503 and
