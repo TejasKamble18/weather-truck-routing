@@ -148,8 +148,13 @@ export async function completeWeather<T>(
     // Cache only after Django accepted the forecasts; memory-only, limited to this page.
     forecasts.forEach(({ cell, forecast }) => {
       const key = cacheKey(cell, spec);
+      const previous = cache.get(key);
+      const expires =
+        previous?.forecast === forecast
+          ? previous.expires
+          : Date.now() + 30 * 60000;
       cache.delete(key);
-      cache.set(key, { expires: Date.now() + 30 * 60000, forecast });
+      cache.set(key, { expires, forecast });
       if (cache.size > MAX_CACHE) cache.delete(cache.keys().next().value!);
     });
     return result;

@@ -7,70 +7,121 @@ const browser = await chromium.launch({
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 const errors = [];
 page.on("pageerror", (error) => errors.push(error.message));
-await page.goto(process.env.PREVIEW_URL || "http://127.0.0.1:5173/", {
-  waitUntil: "networkidle",
+page.on("requestfailed", (request) => {
+  if (
+    request.url().includes("/api/") ||
+    request.url().includes("api.open-meteo.com")
+  )
+    console.error(
+      "Network failure:",
+      request.url().split("?")[0],
+      request.failure()?.errorText,
+    );
 });
-await page
-  .getByRole("heading", { name: "Better roads. Clearer decisions." })
-  .waitFor();
-await page.locator('[data-map-ready="true"]').waitFor({ timeout: 60000 });
-await mkdir("test-results", { recursive: true });
-await page.screenshot({ path: "test-results/desktop-empty.png" });
-const planResponse = page.waitForResponse(
-  (r) =>
-    /\/api\/plan\/[^/]+\/weather\/$/.test(r.url()) &&
-    r.request().method() === "POST",
-  { timeout: 120000 },
-);
-await page.getByRole("button", { name: "Find my routes" }).click();
-const response = await planResponse;
-const plan = await response.json();
-if (!response.ok()) throw Error(JSON.stringify(plan));
-await page
-  .getByRole("button", { name: "Play forecast", exact: true })
-  .waitFor({ state: "visible" });
-await page.waitForFunction(
-  () => !document.querySelector('[aria-label="Play forecast"]').disabled,
-  null,
-  { timeout: 120000 },
-);
-await page
-  .locator(".sidebar")
-  .evaluate((el) => el.scrollTo({ top: el.scrollHeight, behavior: "instant" }));
-await page.screenshot({ path: "test-results/desktop-plan.png" });
-let requests = 0;
-page.on("request", (r) => {
-  if (r.url().includes("/api/") || r.url().includes("api.open-meteo.com"))
-    requests++;
-});
-for (const hour of ["0", "24", "48"]) {
-  await page.getByRole("slider", { name: "Forecast hour" }).fill(hour);
-  for (const layer of ["risk", "wind", "rain", "snow"]) {
-    await page.getByRole("button", { name: layer, exact: true }).click();
+page.on("response", async (response) => {
+  if (response.url().includes("/api/") && !response.ok()) {
+    console.error(
+      "API failure:",
+      response.status(),
+      response.url(),
+      (await response.text()).slice(0, 500),
+    );
   }
+});
+try {
+  await page.goto(process.env.PREVIEW_URL || "http://127.0.0.1:5173/", {
+    waitUntil: "networkidle",
+  });
+  await page
+    .getByRole("heading", { name: "Better roads. Clearer decisions." })
+    .waitFor();
+  await page.locator('[data-map-ready="true"]').waitFor({ timeout: 60000 });
+  await mkdir("test-results", { recursive: true });
+  await page.screenshot({ path: "test-results/desktop-empty.png" });
+  const planResponse = page.waitForResponse(
+    (r) =>
+      /\/api\/plan\/[^/]+\/weather\/$/.test(r.url()) &&
+      r.request().method() === "POST",
+    { timeout: 120000 },
+  );
+  await page.getByRole("button", { name: "Find my routes" }).click();
+  const response = await Promise.race([
+    planResponse,
+    page
+      .getByRole("alert")
+      .waitFor({ state: "visible", timeout: 120000 })
+      .then(async () => {
+        throw new Error(await page.getByRole("alert").innerText());
+      }),
+  ]);
+  const plan = await response.json();
+  if (!response.ok()) throw Error(JSON.stringify(plan));
+  await page
+    .getByRole("button", { name: "Play forecast", exact: true })
+    .waitFor({ state: "visible" });
+  await page.waitForFunction(
+    () => !document.querySelector('[aria-label="Play forecast"]').disabled,
+    null,
+    { timeout: 120000 },
+  );
+  await page
+    .locator(".sidebar")
+    .evaluate((el) =>
+      el.scrollTo({ top: el.scrollHeight, behavior: "instant" }),
+    );
+  await page.screenshot({ path: "test-results/desktop-plan.png" });
+  let requests = 0;
+  page.on("request", (r) => {
+    if (r.url().includes("/api/") || r.url().includes("api.open-meteo.com"))
+      requests++;
+  });
+  for (const hour of ["0", "24", "48"]) {
+    await page.getByRole("slider", { name: "Forecast hour" }).fill(hour);
+    for (const layer of ["risk", "wind", "rain", "snow"]) {
+      await page.getByRole("button", { name: layer, exact: true }).click();
+    }
+  }
+  await page
+    .getByRole("button", { name: "Play forecast", exact: true })
+    .click();
+  await page.waitForTimeout(1500);
+  await page
+    .getByRole("button", { name: "Pause forecast", exact: true })
+    .click();
+  if (requests)
+    throw Error("Timeline fetched API data instead of using prepared frames");
+  if (await page.getByRole("button", { name: /Route B/ }).count())
+    await page.getByRole("button", { name: /Route B/ }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(1000);
+  await page.screenshot({
+    path: "test-results/mobile-plan.png",
+    fullPage: true,
+  });
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > innerWidth,
+  );
+  if (overflow) throw Error("Mobile horizontal overflow");
+  console.log(
+    JSON.stringify({
+      routes: plan.routes.length,
+      checkpoints: plan.routes.map((r) => r.checkpoints.length),
+      timelineApiRequests: requests,
+      pageErrors: errors,
+      mobileOverflow: overflow,
+    }),
+  );
+  if (errors.length) process.exit(1);
+} catch (error) {
+  await page.screenshot({
+    path: "test-results/browser-failure.png",
+    fullPage: true,
+  });
+  console.error(
+    "Visible error:",
+    await page.getByRole("alert").allTextContents(),
+  );
+  throw error;
+} finally {
+  await browser.close();
 }
-await page.getByRole("button", { name: "Play forecast", exact: true }).click();
-await page.waitForTimeout(1500);
-await page.getByRole("button", { name: "Pause forecast", exact: true }).click();
-if (requests)
-  throw Error("Timeline fetched API data instead of using prepared frames");
-if (await page.getByRole("button", { name: /Route B/ }).count())
-  await page.getByRole("button", { name: /Route B/ }).click();
-await page.setViewportSize({ width: 390, height: 844 });
-await page.waitForTimeout(1000);
-await page.screenshot({ path: "test-results/mobile-plan.png", fullPage: true });
-const overflow = await page.evaluate(
-  () => document.documentElement.scrollWidth > innerWidth,
-);
-if (overflow) throw Error("Mobile horizontal overflow");
-console.log(
-  JSON.stringify({
-    routes: plan.routes.length,
-    checkpoints: plan.routes.map((r) => r.checkpoints.length),
-    timelineApiRequests: requests,
-    pageErrors: errors,
-    mobileOverflow: overflow,
-  }),
-);
-await browser.close();
-if (errors.length) process.exit(1);

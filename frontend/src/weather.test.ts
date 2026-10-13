@@ -143,3 +143,31 @@ it("does not cache forecasts rejected by Django", async () => {
   }
   expect(downloads).toBe(2);
 });
+
+it("does not extend forecast freshness when a cached record is reused", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-10-13T10:00:00Z"));
+  let downloads = 0;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string) => {
+      if (url.startsWith("https://api.open-meteo.com/")) {
+        downloads++;
+        return Response.json(provider(url));
+      }
+      return Response.json({ status: "complete" });
+    }),
+  );
+  const { completeWeather } = await import("./weather");
+  const pending = {
+    status: "weather_required" as const,
+    forecast_request: spec(),
+  };
+  await completeWeather(pending, new AbortController().signal);
+  vi.setSystemTime(new Date("2026-10-13T10:20:00Z"));
+  await completeWeather(pending, new AbortController().signal);
+  expect(downloads).toBe(1);
+  vi.setSystemTime(new Date("2026-10-13T10:31:00Z"));
+  await completeWeather(pending, new AbortController().signal);
+  expect(downloads).toBe(2);
+});
