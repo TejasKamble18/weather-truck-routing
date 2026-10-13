@@ -95,3 +95,21 @@ def test_non_monotonic_timing_rejected():
             "test",
             "Test",
         )
+
+
+def _ranked(id, *, avg=0.0, hours=1.0, severe=0.0):
+    miles = dict.fromkeys(LEVELS, 0.0)
+    miles["severe"] = severe
+    return {"id": id, "duration_hours": hours,
+            "summary": {"miles_by_level": miles, "average_risk": avg, "no_travel_warning": False}}
+
+
+def test_reason_shows_a_visible_difference_for_close_average_risk():
+    # Live Denver → Salt Lake City produced "Lowest average risk: 0.02 vs 0.02".
+    reason = rank([_ranked("A", avg=0.0199), _ranked("C", avg=0.0186)])["reason"]
+    assert "0.019" in reason and "0.020" in reason
+
+
+def test_reason_uses_readable_units():
+    assert "14h 49m vs 14h 55m" in rank([_ranked("A", hours=14.81), _ranked("B", hours=14.92)])["reason"]
+    assert "12.0 vs 30.5 mi" in rank([_ranked("A", severe=12), _ranked("B", severe=30.5)])["reason"]

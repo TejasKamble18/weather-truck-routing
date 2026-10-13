@@ -19,6 +19,23 @@ def summarize(points, total):
     }
 
 
+def _hours(value):
+    minutes = round(value * 60)
+    return f"{minutes // 60}h {minutes % 60:02d}m"
+
+
+def _compare(dimension, a, b):
+    """Format the deciding values so the difference is visible to the reader."""
+    if dimension < 3:
+        return f"{a:.1f} vs {b:.1f} mi"
+    if dimension == 4:
+        return f"{_hours(a)} vs {_hours(b)}"
+    for digits in (2, 3, 4):
+        if f"{a:.{digits}f}" != f"{b:.{digits}f}":
+            break
+    return f"{a:.{digits}f} vs {b:.{digits}f}"
+
+
 def rank(routes):
     def key(r):
         s = r["summary"]
@@ -38,17 +55,17 @@ def rank(routes):
     if len(ordered) > 1:
         a, b = key(winner), key(ordered[1])
         labels = [
-            "No Travel miles",
-            "Severe miles",
-            "High miles",
-            "average risk",
-            "travel time",
+            "Fewest No Travel miles",
+            "Fewest Severe miles",
+            "Fewest High miles",
+            "Lowest average risk",
+            "Shortest travel time",
         ]
         diff = next((i for i in range(5) if a[i] != b[i]), None)
         reason = (
             "Equal risk and travel time; route order breaks the tie."
             if diff is None
-            else f"Lowest {labels[diff]}: {a[diff]:.2f} vs {b[diff]:.2f} for the next best route."
+            else f"{labels[diff]}: {_compare(diff, a[diff], b[diff])} for the next best route."
         )
     if winner["summary"]["no_travel_warning"]:
         reason = (
