@@ -19,11 +19,15 @@ page.on("requestfailed", (request) => {
     );
 });
 page.on("response", async (response) => {
-  if (response.url().includes("/api/") && !response.ok()) {
+  if (
+    (response.url().includes("/api/") ||
+      response.url().includes("api.open-meteo.com")) &&
+    !response.ok()
+  ) {
     console.error(
       "API failure:",
       response.status(),
-      response.url(),
+      response.url().split("?")[0],
       (await response.text()).slice(0, 500),
     );
   }
@@ -60,10 +64,22 @@ try {
     .getByRole("button", { name: "Play forecast", exact: true })
     .waitFor({ state: "visible" });
   await page.waitForFunction(
-    () => !document.querySelector('[aria-label="Play forecast"]').disabled,
+    () =>
+      !document.querySelector('[aria-label="Play forecast"]').disabled ||
+      [...document.querySelectorAll("button")].some(
+        (button) => button.textContent === "Retry heatmap",
+      ),
     null,
     { timeout: 120000 },
   );
+  if (await page.getByRole("button", { name: "Retry heatmap" }).isVisible()) {
+    throw new Error(
+      await page
+        .getByRole("button", { name: "Retry heatmap" })
+        .locator("..")
+        .innerText(),
+    );
+  }
   await page
     .locator(".sidebar")
     .evaluate((el) =>

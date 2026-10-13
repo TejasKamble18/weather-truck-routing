@@ -171,3 +171,28 @@ it("does not extend forecast freshness when a cached record is reused", async ()
   await completeWeather(pending, new AbortController().signal);
   expect(downloads).toBe(2);
 });
+
+it("retries a transient weather service error once, then submits the recovered forecast", async () => {
+  let downloads = 0;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string) => {
+      if (!url.startsWith("https://api.open-meteo.com/"))
+        return Response.json({ status: "complete" });
+      downloads++;
+      if (downloads === 1)
+        return new Response("", {
+          status: 503,
+          headers: { "Retry-After": "0" },
+        });
+      return Response.json(provider(url));
+    }),
+  );
+  const { completeWeather } = await import("./weather");
+  const result = await completeWeather(
+    { status: "weather_required", forecast_request: spec() },
+    new AbortController().signal,
+  );
+  expect(result).toEqual({ status: "complete" });
+  expect(downloads).toBe(2);
+});

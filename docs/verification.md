@@ -4,7 +4,7 @@
 
 - Backend: **91 tests pass**, including pending/completed plans, both weather
   submissions, validation, upload limits, expiry and isolated forecast storage.
-- Frontend: **16 tests pass**; TypeScript and Vite production build pass.
+- Frontend: **17 tests pass**; TypeScript and Vite production build pass.
 - Real Chrome against the local production build and real providers returned
   three Chicago–Dallas routes with 40/40/41 checkpoints and a 148-cell heatmap.
 - All four layers, hours 0/24/48, play/pause and route selection were exercised.
@@ -23,6 +23,11 @@
   tablet layout received 8 px more clearance below its welcome card.
 - GitHub Actions passed for `84172b1`. Browser cache reuse also has a regression
   test ensuring it never extends the original 30-minute forecast freshness.
+- A later live repeat completed route scoring but encountered a provider error
+  while loading corridor weather. The UI preserved the scored routes and showed
+  the heatmap error with Retry. HTTP 502/503/504 now receive the same single,
+  bounded retry as 429; persistent failures remain visible rather than fabricating
+  safe weather. The browser check reports provider failures immediately.
 
 ## Original implementation checks
 

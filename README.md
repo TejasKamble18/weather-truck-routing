@@ -135,7 +135,7 @@ download any forecasts. Replanning cancels outstanding requests.
 This transport avoids depending on the hosting server's access to the free
 weather endpoint, which returned rate limits during deployment. It does not
 remove provider quotas or guarantee availability: downloads have a 30-second
-timeout and at most one short retry for HTTP 429. Other failures remain visible.
+timeout and at most one short retry for HTTP 429/502/503/504. Other failures remain visible.
 Omitting `weather_source` preserves the original server-only API.
 
 Django checks cell membership, returned model coordinates (within 0.25 degrees

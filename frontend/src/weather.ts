@@ -61,7 +61,7 @@ async function download(
         signal: AbortSignal.any([signal, AbortSignal.timeout(30000)]),
       },
     );
-    if (response.status === 429) {
+    if ([429, 502, 503, 504].includes(response.status)) {
       const header = response.headers.get("Retry-After");
       const delay =
         header === null
@@ -79,7 +79,9 @@ async function download(
         continue;
       }
       throw new Error(
-        "The weather service is rate-limiting requests. Please wait a few minutes and try again.",
+        response.status === 429
+          ? "The weather service is rate-limiting requests. Please wait a few minutes and try again."
+          : "The weather service is unavailable. Please try again later.",
       );
     }
     if (!response.ok)
