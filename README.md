@@ -172,7 +172,7 @@ existing compatible Chromium executable. These live checks depend on providers.
 For the responsive overlay regression check, run `node scripts/check-overlay-layout.mjs`
 with the frontend server running. It mocks the API and base map, so it needs no
 backend server or API key. It checks all four layers plus empty/error states at
-320, 390, 768 and 1440 pixels. `PREVIEW_URL` can target a production preview.
+320, 390, 768 and 1440 pixels wide, each 844 and 650 pixels tall (a 1366×768 laptop). `PREVIEW_URL` can target a production preview.
 
 ## Deploy
 

@@ -9,6 +9,9 @@
   deterministic browser regression check passes **24 cases**: empty, four weather
   layers and forecast errors at 320, 390, 768 and 1440 pixels, with at least 12
   pixels between overlays and no horizontal overflow or page errors.
+- Follow-up: the layout check now waits for the lazy-loaded map and also runs at
+  650 px tall; it caught the welcome card overlapping the legend on a 1366×768
+  laptop and on phones, both fixed. **48 cases pass.** Favicon added (no console 404).
 - Dependency audit after updating MapLibre and Vitest: **0 known npm vulnerabilities**.
 - Desktop Chromium, 1440×1000: map loaded, three real Chicago–Dallas routes,
   40/40/41 checkpoints, route selection, forecast slider, layer switch and play/pause.

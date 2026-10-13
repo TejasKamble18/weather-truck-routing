@@ -935,8 +935,13 @@ legend {
     top: 16px;
   }
   .map-empty {
-    top: 19%;
+    top: 13%;
     width: 290px;
+    padding: 18px;
+  }
+  /* The stacked legend and forecast panel leave less room on phones. */
+  .map-empty > div {
+    display: none;
   }
   .map-overlays {
     bottom: 36px;
@@ -1026,4 +1031,24 @@ legend {
 .heat-scale span:last-child {
   margin-left: auto;
   color: #9ba58f;
+}
+/* Short desktop/tablet windows (e.g. a 1366×768 laptop): the stacked legend and
+   forecast panel leave little room above them, so keep the welcome card compact
+   and just under the map heading. */
+@media (min-width: 721px) and (max-height: 860px) {
+  .map-empty {
+    top: 76px;
+    padding: 18px 22px;
+  }
+  .map-empty > svg,
+  .map-empty > div {
+    display: none;
+  }
+  .map-empty h2 {
+    font-size: 24px;
+    margin: 8px 0;
+  }
+  .map-empty p {
+    line-height: 1.6;
+  }
 }
