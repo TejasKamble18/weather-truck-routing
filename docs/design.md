@@ -182,7 +182,9 @@ backend/
 - **Map:** three route lines (recommended thicker, others dimmed until hovered or
   selected); checkpoint circles coloured by risk level; hover popup with mile, ETA,
   wind/gust, rain, snow and the deciding condition; origin and destination markers.
-- **Heatmap:** MapLibre `heatmap` layer (GPU). All 49 frames are built once into
+- **Heatmap:** MapLibre circle layer (GPU), each cell a blurred circle coloured by
+  its own value with the risk-rule bands (a density `heatmap` layer misrepresents
+  isolated or overlapping values). All 49 frames are built once into
   GeoJSON when the heatmap response arrives; the slider only calls `setData` on the
   prepared frame, so dragging never waits on the network. Layer toggle: Risk / Wind
   / Rain / Snow, with a legend. Play button animates hours. A truck marker on each

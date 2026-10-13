@@ -1004,18 +1004,15 @@ legend {
   color: #819078;
   margin-top: 11px;
 }
-.heat-scale i {
-  width: 70px;
-  height: 4px;
+.heat-band {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.heat-band i {
+  width: 14px;
+  height: 6px;
   border-radius: 3px;
-  background: linear-gradient(
-    90deg,
-    #70cba8,
-    #e8d76a,
-    #eb9b54,
-    #dd555c,
-    #843861
-  );
 }
 .heat-scale span:last-child {
   margin-left: auto;

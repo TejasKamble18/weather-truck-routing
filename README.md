@@ -59,6 +59,10 @@ the last returned one distinct route. Provider results can change.
   **0–48 hours from the plan's current UTC hour**. Slider and play controls use
   downloaded frames, with no API requests. Truck markers follow route timing;
   they are hidden before departure and after arrival.
+- Each corridor cell is drawn as a soft circle **coloured by its own value**, using
+  the same bands as checkpoint risk (e.g. wind 25/35/45/55 mph). A density heatmap
+  was avoided on purpose: it would show an isolated No Travel cell as mild and
+  overlapping calm cells as severe.
 - The timeline changes the corridor overlay, **not the route recommendation**.
   Change departure and plan again to compare a different departure time.
 

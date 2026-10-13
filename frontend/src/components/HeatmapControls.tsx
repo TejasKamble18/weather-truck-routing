@@ -1,6 +1,7 @@
 import { Play, Pause, Wind, CloudRain, Snowflake, Layers } from "lucide-react";
 import type { Layer, Heatmap } from "../api";
 import { dateTime } from "../lib";
+import { heatStops, legendLabels } from "../heat";
 export default function HeatmapControls({
   heatmap,
   hour,
@@ -95,18 +96,15 @@ export default function HeatmapControls({
       </div>
       {heatmap && (
         <div className="heat-scale">
-          <span>{layer === "risk" ? "Low" : "0"}</span>
-          <i />
-          <span>
-            {layer === "risk"
-              ? "No Travel"
-              : layer === "wind"
-                ? "55+ mph"
-                : layer === "rain"
-                  ? "1+ in/h"
-                  : "3+ in/h"}
-          </span>
-          <span>Relative heat intensity</span>
+          {heatStops(layer)
+            .slice(1)
+            .map(([threshold, color], i) => (
+              <span key={threshold} className="heat-band">
+                <i style={{ background: color }} />
+                {legendLabels[layer][i]}
+              </span>
+            ))}
+          <span>Same thresholds as checkpoint risk</span>
         </div>
       )}
       <div className="forecast-caption" aria-live="polite">

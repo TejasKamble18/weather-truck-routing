@@ -12,6 +12,7 @@ import {
   routeColors,
   truckPosition,
 } from "../lib";
+import { cellRadiusAtZoom0, heatColorExpression } from "../heat";
 import "maplibre-gl/dist/maplibre-gl.css";
 maplibregl.setWorkerUrl(workerUrl);
 
@@ -73,32 +74,18 @@ export default function MapView({
         "trucks",
       ])
         m.addSource(id, { type: "geojson", data: empty });
+      // Each forecast cell is a soft circle coloured by its own value (not a density
+      // heatmap, which would make an isolated No Travel cell look mild and overlapping
+      // calm cells look severe). Radius and colours are set once a heatmap arrives.
       m.addLayer({
         id: "weather",
-        type: "heatmap",
+        type: "circle",
         source: "weather",
         paint: {
-          "heatmap-weight": ["get", "weight"],
-          "heatmap-intensity": 0.7,
-          "heatmap-radius": 55,
-          "heatmap-opacity": 0.48,
-          "heatmap-color": [
-            "interpolate",
-            ["linear"],
-            ["heatmap-density"],
-            0,
-            "rgba(30,160,130,0)",
-            0.1,
-            "#70cba8",
-            0.3,
-            "#e8d76a",
-            0.5,
-            "#eb9b54",
-            0.75,
-            "#dd555c",
-            1,
-            "#843861",
-          ],
+          "circle-color": "rgba(0,0,0,0)",
+          "circle-radius": 0,
+          "circle-blur": 1,
+          "circle-opacity": 0.6,
         },
       });
       m.addLayer({
@@ -158,6 +145,8 @@ export default function MapView({
         source: "trucks",
         layout: {
           "text-field": ["get", "id"],
+          // A font OpenFreeMap serves; MapLibre's default stack 404s on its glyph server.
+          "text-font": ["Noto Sans Regular"],
           "text-size": 11,
           "text-allow-overlap": true,
         },
@@ -303,16 +292,34 @@ export default function MapView({
   }, [plan, selected, ready]);
   const frames = useMemo(() => {
     if (!heatmap) return null;
-    const max = { risk: 4, wind: 55, rain: 1, snow: 3 };
     return heatmap.layers[layer].map((values) => ({
       type: "FeatureCollection" as const,
       features: heatmap.cells.map((coordinates, i) => ({
         type: "Feature" as const,
         geometry: { type: "Point" as const, coordinates },
-        properties: { weight: Math.min(1, values[i] / max[layer]) },
+        properties: { value: values[i] },
       })),
     }));
   }, [heatmap, layer]);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready || !heatmap) return;
+    const r0 = cellRadiusAtZoom0(heatmap.cells);
+    m.setPaintProperty("weather", "circle-radius", [
+      "interpolate",
+      ["exponential", 2],
+      ["zoom"],
+      0,
+      r0,
+      20,
+      r0 * 2 ** 20,
+    ]);
+    m.setPaintProperty(
+      "weather",
+      "circle-color",
+      heatColorExpression(layer) as maplibregl.ExpressionSpecification,
+    );
+  }, [heatmap, layer, ready]);
   useEffect(() => {
     const m = map.current;
     if (!m || !ready) return;
